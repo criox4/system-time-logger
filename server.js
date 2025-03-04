@@ -1,8 +1,14 @@
 const express = require("express");
+const http = require("http");
+const socketIo = require("socket.io");
 const path = require("path");
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
 const port = 3000;
+const logHistory = []; // Cache logs
 
 // Serve static files (for frontend)
 app.use(express.static(path.join(__dirname, "public")));
@@ -24,11 +30,22 @@ function getFormattedLocalTime() {
     };
 }
 
-// Log system time every 5 seconds
+// Function to add logs to cache and emit them
+function addLog(message) {
+    logHistory.push(message);
+    if (logHistory.length > 50) {
+        logHistory.shift(); // Keep only the last 50 logs
+    }
+    io.emit("log", message);
+}
 
+// Log system time every 30 seconds and cache logs
 setInterval(() => {
     const timeData = getFormattedLocalTime();
-    console.log(`🕒 System Time: ${timeData.formattedTime} | Day: ${timeData.dayOfWeek}`);
+    const logMessage = `🕒 System Time: ${timeData.formattedTime} | Day: ${timeData.dayOfWeek}`;
+    
+    console.log(logMessage);
+    addLog(logMessage);
 }, 5000);
 
 // API route to get current system time
@@ -36,12 +53,21 @@ app.get("/api/time", (req, res) => {
     res.json(getFormattedLocalTime());
 });
 
-// Serve HTML page
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
+// WebSocket connection
+io.on("connection", (socket) => {
+    console.log("🔌 New client connected");
+
+    // Send stored logs to new client
+    socket.emit("logHistory", logHistory);
+
+    socket.emit("log", "🔹 Connected to server log stream!");
+
+    socket.on("disconnect", () => {
+        console.log("🔌 Client disconnected");
+    });
 });
 
 // Start the server
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`🚀 Server running at http://localhost:${port}`);
 });

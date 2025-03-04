@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Time Display</title>
+    <title>System Time & Logs</title>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            margin-top: 50px;
+            margin-top: 30px;
             background-color: #f4f4f4;
         }
         .container {
@@ -17,6 +18,8 @@
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
             display: inline-block;
+            width: 80%;
+            max-width: 600px;
         }
         h1 {
             color: #333;
@@ -44,6 +47,18 @@
         button:hover {
             background: #0056b3;
         }
+        #logs {
+            margin-top: 20px;
+            text-align: left;
+            background: #222;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -53,9 +68,34 @@
         <div id="time">Loading...</div>
         <div class="info" id="extraInfo"></div>
         <button onclick="fetchTime()">Refresh Time</button>
+
+        <h2>Console Logs</h2>
+        <div id="logs"></div>
     </div>
 
     <script>
+        const socket = io(); // Connect to WebSocket
+        const logsDiv = document.getElementById("logs");
+
+        function appendLog(message) {
+            const newLog = document.createElement("div");
+            newLog.textContent = message;
+            logsDiv.appendChild(newLog);
+            logsDiv.scrollTop = logsDiv.scrollHeight; // Auto-scroll to bottom
+        }
+
+        // Load old logs when the page loads
+        socket.on("logHistory", (history) => {
+            logsDiv.innerHTML = ""; // Clear logs
+            history.forEach(log => appendLog(log));
+        });
+
+        // Listen for new log messages
+        socket.on("log", (message) => {
+            appendLog(message);
+        });
+
+        // Function to update system time
         function fetchTime() {
             const date = new Date();
             const formattedTime = date.toLocaleString("en-US", {
