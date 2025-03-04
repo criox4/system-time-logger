@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UTC Time Display</title>
+    <title>System Time Display</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -49,32 +49,27 @@
 <body>
 
     <div class="container">
-        <h1>Current UTC Time</h1>
+        <h1>Current System Time</h1>
         <div id="time">Loading...</div>
         <div class="info" id="extraInfo"></div>
         <button onclick="fetchTime()">Refresh Time</button>
     </div>
 
     <script>
-        async function fetchTime() {
-            try {
-                const response = await fetch('/api/time');
-                const data = await response.json();
-                if (data.error) {
-                    document.getElementById('time').innerHTML = "Error fetching time!";
-                    return;
-                }
-                
-                document.getElementById('time').innerHTML = `${data.formattedTime}`;
-                document.getElementById('extraInfo').innerHTML = `
-                    <p>Day: ${data.dayOfWeek}</p>
-                    <p>Date: ${data.date}</p>
-                    <p>Time Zone: ${data.timeZone}</p>
-                `;
-            } catch (error) {
-                console.error("❌ Error fetching time:", error);
-                document.getElementById('time').innerHTML = "Error fetching time!";
-            }
+        function fetchTime() {
+            const date = new Date();
+            const formattedTime = date.toLocaleString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true
+            });
+
+            document.getElementById('time').innerHTML = formattedTime;
+            document.getElementById('extraInfo').innerHTML = `<p>Day: ${date.toLocaleString("en-US", { weekday: "long" })}</p>`;
         }
 
         // Fetch time when page loads
